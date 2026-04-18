@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const logger = require('../utils/logger');
-const VJCollectionSchema = require('../models/File'); // Rename file or keep as is
+const VJCollectionSchema = require('../models/file'); // Rename file or keep as is
 
 const connections = [];
 
