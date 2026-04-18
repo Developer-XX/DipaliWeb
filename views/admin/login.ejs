@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Login - MovieIndex</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="dark">
+  <div class="container">
+    <div class="admin-login">
+      <h2>Admin Access</h2>
+      <form method="GET" action="/admin/dashboard">
+        <label for="secret">Secret Key</label>
+        <input type="password" id="secret" name="secret" placeholder="Enter admin secret" required autofocus>
+        <button type="submit">Login</button>
+      </form>
+      <% if (locals.error) { %>
+        <p class="error-message"><%= error %></p>
+      <% } %>
+    </div>
+  </div>
+</body>
+</html>

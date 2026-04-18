@@ -1,0 +1,36 @@
+<% if (file.isSeries) { %>
+  <a href="/series/<%= encodeURIComponent(file.name) %>" style="text-decoration: none;">
+    <div class="movie-card">
+      <div class="poster">
+        <img src="/img?url=<%= encodeURIComponent(file.seriesPoster || '') %>" alt="<%= file.name %>" onerror="this.src='/placeholder.jpg'">
+      </div>
+      <div class="card-body">
+        <h6 class="card-title"><%= file.name %></h6>
+        <p class="card-episodes"><%= file.totalSeasons %> seasons · <%= file.totalEpisodes %> episodes</p>
+      </div>
+    </div>
+  </a>
+<% } else { %>
+  <!-- Regular File Card -->
+  <div class="movie-card">
+    <div class="poster">
+      <img src="/img?url=<%= encodeURIComponent(file.image || '') %>" 
+           alt="<%= file.title || file.caption || file.file_name %>" 
+           loading="lazy" 
+           onerror="this.src='/placeholder.jpg'">
+    </div>
+    <div class="card-body">
+      <h6 class="card-title" title="<%= file.title || file.caption || file.file_name %>">
+        <%= file.title || file.caption || file.file_name %>
+      </h6>
+      <div class="badges">
+        <% if (file.lang) { %><span class="badge-custom"><%= file.lang %></span><% } %>
+        <% if (file.quality) { %><span class="badge-custom"><%= file.quality %></span><% } %>
+      </div>
+      <div class="footer">
+        <small class="size"><%= (file.file_size / (1024*1024)).toFixed(0) %> MB</small>
+        <a href="/get/<%= file.file_id %>" class="get-btn" target="_blank">Download</a>
+      </div>
+    </div>
+  </div>
+<% } %>

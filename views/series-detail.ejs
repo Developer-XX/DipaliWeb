@@ -1,0 +1,52 @@
+<%- contentFor('body') %>
+<div class="container" style="margin: var(--space-2xl) auto;">
+  <div style="margin-bottom: var(--space-3xl);">
+    <h1 style="font-size: var(--font-size-4xl); font-weight: 800; margin-bottom: var(--space-md); color: var(--text-primary);">
+      <%= series.seriesName %>
+    </h1>
+    <p style="font-size: var(--font-size-lg); color: var(--text-muted); margin: 0;">
+      📺 <%= series.totalEpisodes %> episodes
+    </p>
+  </div>
+
+  <!-- Season Navigation -->
+  <div style="display: flex; flex-wrap: wrap; gap: var(--space-md); margin-bottom: var(--space-3xl); padding-bottom: var(--space-lg); border-bottom: 1px solid var(--border-color);">
+    <% series.seasons.forEach(s => { %>
+      <% if (s > 0) { %>
+        <a href="/series/<%= encodeURIComponent(series.seriesName) %>?season=<%= s %>" 
+           style="padding: var(--space-sm) var(--space-lg); border-radius: 8px; text-decoration: none; font-weight: 600; transition: all var(--transition-fast); border: 2px solid <%= locals.selectedSeason == s ? 'var(--color-accent)' : 'var(--border-color)' %>; background: <%= locals.selectedSeason == s ? 'var(--color-accent)' : 'transparent' %>; color: <%= locals.selectedSeason == s ? 'white' : 'var(--text-secondary)' %>;">
+          Season <%= s %>
+        </a>
+      <% } %>
+    <% }) %>
+  </div>
+
+  <!-- Episodes Grid -->
+  <div class="movies-grid">
+    <% if (series.episodes.length > 0) { %>
+      <% series.episodes.forEach(ep => { %>
+        <div class="movie-card">
+          <div class="poster" style="position: relative;">
+            <img src="/img?url=<%= encodeURIComponent(ep.image || series.seriesPoster || '') %>" 
+                 style="width: 100%; height: 100%; object-fit: cover;"
+                 onerror="this.src='/placeholder.jpg'">
+            <div style="position: absolute; top: var(--space-md); right: var(--space-md); background: var(--color-accent); color: white; padding: var(--space-sm) var(--space-md); border-radius: 8px; font-size: var(--font-size-xs); font-weight: 700;">
+              S<%= ep.season || 1 %>E<%= ep.episode || '?' %>
+            </div>
+          </div>
+          <div class="card-body">
+            <h5 class="card-title"><%= ep.title || ep.caption %></h5>
+            <div class="footer">
+              <span class="size"><%= (ep.file_size / (1024*1024)).toFixed(0) %> MB</span>
+              <a href="/get/<%= ep.file_id %>" class="get-btn" target="_blank">Download</a>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <div style="grid-column: 1/-1; text-align: center; padding: var(--space-3xl);">
+        <p style="color: var(--text-muted);">No episodes found for this season.</p>
+      </div>
+    <% } %>
+  </div>
+</div>

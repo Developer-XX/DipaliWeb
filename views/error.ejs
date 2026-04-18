@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error - MovieIndex</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="dark">
+  <div class="container" style="text-align: center; padding: 4rem 1rem;">
+    <h1 style="font-size: 4rem; color: var(--primary);"><%= status || 500 %></h1>
+    <h2>Oops! Something went wrong</h2>
+    <p style="color: var(--text-secondary); margin: 1rem 0;"><%= message || 'An unexpected error occurred' %></p>
+    <a href="/" class="btn-get" style="display: inline-block;">Go Home</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,12 @@
+<div class="container py-4">
+  <div class="section-header">
+    <h2 class="section-title"><%= title %></h2>
+  </div>
+  <div class="row g-2">
+    <% items.forEach(file => { %>
+      <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
+        <%- include('partials/movie-card', { file, botUsername }) %>
+      </div>
+    <% }) %>
+  </div>
+</div>

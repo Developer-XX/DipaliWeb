@@ -1,0 +1,280 @@
+<div class="homepage">
+  <% if (!locals.query) { %>
+    <!-- HERO SECTION -->
+    <section class="hero">
+      <h1 class="hero-title">Movie & Series Gateway</h1>
+      <p class="hero-subtitle">Search and download instantly</p>
+      
+      <form action="/search" method="GET" class="hero-search-form">
+        <input type="text" name="q" class="form-control hero-input" placeholder="Search movies, series..." required>
+        <button type="submit" class="btn btn-accent hero-btn">Search</button>
+      </form>
+    </section>
+
+    <!-- FEATURES SECTION -->
+    <div class="container py-5">
+      <div class="row g-3">
+        <div class="col-6 col-md-3">
+          <div class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <h5 class="feature-title">Fast</h5>
+            <p class="feature-text">Find instantly</p>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="feature-card">
+            <div class="feature-icon">🎬</div>
+            <h5 class="feature-title">Quality</h5>
+            <p class="feature-text">HD & 4K</p>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="feature-card">
+            <div class="feature-icon">🌐</div>
+            <h5 class="feature-title">Easy</h5>
+            <p class="feature-text">One click</p>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h5 class="feature-title">Safe</h5>
+            <p class="feature-text">Secure</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT SECTION -->
+    <div class="container py-4">
+      <div class="row g-3">
+        <!-- SIDEBAR -->
+        <!-- <div class="col-lg-3">
+          <aside class="sidebar">
+            <h5 class="sidebar-title">Filters</h5>
+            <form id="filterForm" method="GET" action="/search">
+              <div class="filter-group">
+                <label class="filter-label" for="filterCategory">Category</label>
+                <select class="form-select form-select-sm" id="filterCategory" name="category">
+                  <option value="">All</option>
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label class="filter-label" for="filterLanguage">Language</label>
+                <select class="form-select form-select-sm" id="filterLanguage" name="language">
+                  <option value="">All</option>
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label class="filter-label" for="filterType">Type</label>
+                <select class="form-select form-select-sm" id="filterType" name="type">
+                  <option value="">All</option>
+                  <option value="movie">Movie</option>
+                  <option value="series">Series</option>
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label class="filter-label" for="filterQuality">Quality</label>
+                <select class="form-select form-select-sm" id="filterQuality" name="quality">
+                  <option value="">All</option>
+                </select>
+              </div>
+
+              <div class="filter-buttons">
+                <button type="submit" class="btn btn-accent btn-sm w-100">Apply</button>
+                <a href="/search?q=" class="btn btn-outline-accent btn-sm w-100" style="margin-top: 0.5rem;">Reset</a>
+              </div>
+            </form>
+          </aside>
+        </div> -->
+
+        <!-- MAIN CONTENT -->
+        <div class="col-lg-9">
+          <!-- TRENDING SECTION -->
+          <div class="movies-section">
+            <div class="section-header">
+              <h2 class="section-title">🔥 Trending</h2>
+             <a href="/trending" class="btn btn-sm btn-outline-accent view-all-btn">View All</a>
+            </div>
+            <div class="row g-2">
+              <% if (locals.trending) { %>
+                <% trending.slice(0, 12).forEach(file => { %>
+                  <div class="col-6 col-sm-4 col-lg-3">
+                    <%- include('partials/movie-card', { file, botUsername }) %>
+                  </div>
+                <% }) %>
+              <% } %>
+            </div>
+             
+          </div>
+
+          <!-- POPULAR SERIES SECTION -->
+          <div class="movies-section">
+            <div class="section-header">
+              <h2 class="section-title">📺 Series</h2>
+              <a href="/series" class="btn btn-sm btn-outline-accent">View All</a>
+            </div>
+            <div class="row g-2" id="seriesGrid">
+              <div class="col-12 text-center py-3">
+                <div class="spinner-border text-accent" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- RECENTLY ADDED SECTION -->
+          <div class="movies-section">
+            <div class="section-header">
+              <h2 class="section-title">🆕 Recent</h2>
+              <a href="/recent" class="btn btn-sm btn-outline-accent">View All</a>
+            </div>
+            <div class="row g-2">
+              <% if (locals.recent) { %>
+                <% recent.slice(0, 12).forEach(file => { %>
+                  <div class="col-6 col-sm-4 col-lg-3">
+                    <%- include('partials/movie-card', { file, botUsername }) %>
+                  </div>
+                <% }) %>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <% } else { %>
+    <!-- SEARCH RESULTS PAGE -->
+    <div class="container py-4">
+      <div class="results-header">
+        <h2 class="results-title">Results for <span class="query">"<%= query %>"</span></h2>
+      </div>
+
+      <div class="row g-2" id="resultsGrid">
+        <% if (locals.results && results.length) { %>
+          <% results.forEach(file => { %>
+            <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
+              <%- include('partials/movie-card', { file, botUsername }) %>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <div class="col-12">
+            <div class="no-results text-center py-5">
+              <p class="text-muted">No results found.</p>
+            </div>
+          </div>
+        <% } %>
+      </div>
+
+
+
+      <!-- LOAD MORE BUTTON -->
+      <% if (locals.pagination && pagination.page < pagination.totalPages) { %>
+        <div class="text-center py-4">
+          <button id="loadMoreBtn" data-page="<%= pagination.page %>" data-query="<%= query %>" class="btn btn-accent">
+            Load More
+          </button>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+</div>
+
+<!-- SCRIPTS -->
+<% if (!locals.query) { %>
+<script>
+  (function() {
+    async function loadFilters() {
+      try {
+        const res = await fetch('/api/filters');
+        const data = await res.json();
+        const categorySelect = document.getElementById('filterCategory');
+        data.categories.forEach(c => categorySelect.add(new Option(c, c)));
+        const langSelect = document.getElementById('filterLanguage');
+        data.languages.forEach(l => langSelect.add(new Option(l, l)));
+        const qualitySelect = document.getElementById('filterQuality');
+        data.qualities.forEach(q => qualitySelect.add(new Option(q, q)));
+      } catch (err) {
+        console.error('Failed to load filters', err);
+      }
+    }
+
+    async function loadSeries() {
+      const grid = document.getElementById('seriesGrid');
+      try {
+        const res = await fetch('/api/series');
+        const series = await res.json();
+        if (!series.length) {
+          grid.innerHTML = '<div class="col-12 text-center"><p class="text-muted">No series found</p></div>';
+          return;
+        }
+        grid.innerHTML = series.map(s => `
+          <div class="col-6 col-sm-4 col-lg-3">
+            <a href="/series/${encodeURIComponent(s.name)}" style="text-decoration: none;">
+              <div class="movie-card">
+                <div class="poster">
+                  <img src="/img?url=${encodeURIComponent(s.poster || '')}" alt="${s.name}" onerror="this.src='/placeholder.jpg'">
+                </div>
+                <div class="card-body">
+                  <h6 class="card-title">${s.name}</h6>
+                  <p class="card-episodes">${s.count} episodes</p>
+                </div>
+              </div>
+            </a>
+          </div>
+        `).join('');
+      } catch (err) {
+        grid.innerHTML = '<div class="col-12 text-center"><p class="text-muted">Failed to load series</p></div>';
+      }
+    }
+
+    loadFilters();
+    loadSeries();
+  })();
+</script>
+<% } %>
+
+<% if (locals.query) { %>
+<script>
+  document.getElementById('loadMoreBtn')?.addEventListener('click', async function() {
+    const btn = this;
+    const page = parseInt(btn.dataset.page) + 1;
+    const query = btn.dataset.query;
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&page=${page}`);
+      const data = await res.json();
+      const grid = document.getElementById('resultsGrid');
+      data.results.forEach(file => {
+        const col = document.createElement('div');
+        col.className = 'col-6 col-sm-4 col-lg-3 col-xl-2';
+        col.innerHTML = `
+          <div class="movie-card">
+            <div class="poster">
+              <img src="/img?url=${encodeURIComponent(file.image || '')}" alt="${file.file_name}" onerror="this.src='/placeholder.jpg'">
+            </div>
+            <div class="card-body">
+              <h6 class="card-title">${file.file_name}</h6>
+              <div class="badges">
+                ${file.lang ? `<span class="badge-custom">${file.lang}</span>` : ''}
+                ${file.quality ? `<span class="badge-custom">${file.quality}</span>` : ''}
+              </div>
+              <div class="footer">
+                <small class="size">${(file.file_size / (1024*1024)).toFixed(0)} MB</small>
+                <a href="/get/${file.file_id}" class="get-btn">Get</a>
+              </div>
+            </div>
+          </div>
+        `;
+        grid.appendChild(col);
+      });
+      if (page >= data.totalPages) btn.remove();
+      else btn.dataset.page = page;
+    } catch (err) {
+      console.error('Failed to load more', err);
+    }
+  });
+</script>
+<% } %>

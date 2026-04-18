@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - MovieIndex</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      line-height: 1.5;
+    }
+    .admin-container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+    .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+    .admin-header h1 { font-size: 2rem; font-weight: 600; }
+    .btn {
+      padding: 0.6rem 1.2rem; background: #1f1f1f; border: 1px solid #333;
+      border-radius: 6px; color: #fff; text-decoration: none; cursor: pointer;
+      transition: background 0.2s; display: inline-block;
+    }
+    .btn:hover { background: #2a2a2a; }
+    .btn-primary { background: #e50914; border-color: #e50914; }
+    .btn-primary:hover { background: #f40612; }
+    .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.85rem; margin-right: 0.25rem; }
+    .stats-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: #141414; border: 1px solid #2a2a2a; border-radius: 12px; padding: 1.5rem; }
+    .stat-card h3 { font-size: 0.9rem; color: #b3b3b3; margin-bottom: 0.5rem; }
+    .stat-card p { font-size: 2rem; font-weight: 700; color: #e50914; }
+    .search-bar { margin-bottom: 1.5rem; }
+    .search-bar input {
+      width: 100%; padding: 0.8rem 1rem; background: #141414; border: 1px solid #2a2a2a;
+      border-radius: 8px; color: #fff; font-size: 1rem;
+    }
+    .admin-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid #2a2a2a; }
+    .tab-btn {
+      background: none; border: none; padding: 0.75rem 1.5rem; color: #b3b3b3;
+      cursor: pointer; font-size: 1rem; border-bottom: 2px solid transparent;
+    }
+    .tab-btn.active { color: #e50914; border-bottom-color: #e50914; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .table-container { background: #141414; border: 1px solid #2a2a2a; border-radius: 12px; overflow: auto; }
+    .file-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+    .file-table th { text-align: left; padding: 1rem; background: #1a1a1a; color: #b3b3b3; border-bottom: 1px solid #2a2a2a; }
+    .file-table td { padding: 1rem; border-bottom: 1px solid #2a2a2a; }
+    .file-table tr:last-child td { border-bottom: none; }
+    .file-table tr:hover { background: rgba(255,255,255,0.02); }
+    .poster-thumb { width: 50px; height: 75px; object-fit: cover; border-radius: 4px; }
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 1000; overflow-y: auto;
+    }
+    .modal-content {
+      background: #141414; margin: 2rem auto; padding: 2rem; max-width: 700px;
+      border-radius: 16px; border: 1px solid #2a2a2a;
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group.full-width { grid-column: span 2; }
+    .form-group label { display: block; margin-bottom: 0.4rem; color: #b3b3b3; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 0.7rem; background: #0a0a0a; border: 1px solid #2a2a2a;
+      border-radius: 6px; color: #fff;
+    }
+    .form-actions { display: flex; gap: 1rem; margin-top: 1.5rem; }
+    .settings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+    .settings-card { background: #141414; border: 1px solid #2a2a2a; border-radius: 12px; padding: 1.5rem; }
+    .settings-card h3 { margin-bottom: 1rem; }
+    .metadata-list { max-height: 200px; overflow-y: auto; margin-bottom: 1rem; }
+    .metadata-item { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: #0a0a0a; border-radius: 4px; margin-bottom: 0.5rem; }
+    .delete-metadata { background: none; border: none; color: #f44336; font-size: 1.2rem; cursor: pointer; }
+    .add-metadata { display: flex; gap: 0.5rem; }
+    .add-metadata input { flex: 1; padding: 0.5rem; background: #0a0a0a; border: 1px solid #2a2a2a; border-radius: 4px; color: #fff; }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1>Admin Dashboard</h1>
+      <a href="/" class="btn">Back to Site</a>
+    </div>
+
+    <div class="stats-cards">
+      <div class="stat-card">
+        <h3>Total Files</h3>
+        <p><%= totalFiles %></p>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="admin-tabs">
+      <button class="tab-btn active" data-tab="files">📁 Files</button>
+      <button class="tab-btn" data-tab="settings">⚙️ Settings</button>
+    </div>
+
+    <!-- Files Tab -->
+    <div id="filesTab" class="tab-content active">
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search files...">
+      </div>
+      <div class="table-container">
+        <table class="file-table">
+          <thead>
+            <tr>
+              <th>Poster</th>
+              <th>Title</th>
+              <th>Category</th>
+              <th>Language</th>
+              <th>Size</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="fileTableBody">
+            <% recentFiles.forEach(file => { %>
+            <tr>
+              <td><img src="<%= file.image || '/placeholder.jpg' %>" class="poster-thumb" alt=""></td>
+              <td><%= file.title || file.caption || file.file_name %></td>
+              <td><%= file.category || '' %></td>
+              <td><%= file.lang || '' %></td>
+              <td><%= (file.file_size / (1024*1024)).toFixed(0) %> MB</td>
+              <td>
+                <button class="btn btn-sm edit-btn" data-file-id="<%= file.file_id %>">Edit</button>
+                <button class="btn btn-sm delete-btn" data-file-id="<%= file.file_id %>">Delete</button>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Settings Tab -->
+    <div id="settingsTab" class="tab-content">
+      <h2 style="margin-bottom: 1.5rem;">Manage Metadata</h2>
+      <div class="settings-grid">
+        <div class="settings-card">
+          <h3>Categories</h3>
+          <div class="metadata-list" data-type="category"></div>
+          <div class="add-metadata">
+            <input type="text" placeholder="New category" data-type="category">
+            <button class="btn-sm add-metadata-btn">Add</button>
+          </div>
+        </div>
+        <div class="settings-card">
+          <h3>Languages</h3>
+          <div class="metadata-list" data-type="language"></div>
+          <div class="add-metadata">
+            <input type="text" placeholder="New language" data-type="language">
+            <button class="btn-sm add-metadata-btn">Add</button>
+          </div>
+        </div>
+       <div class="settings-card">
+  <h3>Series Names</h3>
+  <!-- Search input -->
+  <input type="text" id="seriesSearchInput" placeholder="🔍 Search series..." class="metadata-search" style="width:100%; padding:0.5rem; margin-bottom:1rem; background:var(--bg); border:1px solid var(--border); color:var(--text); border-radius:6px;">
+  <div class="metadata-list" data-type="series"></div>
+  <div class="add-metadata">
+    <input type="text" placeholder="Series name" class="series-name-input">
+    <input type="text" placeholder="Poster URL (optional)" class="series-image-input">
+    <button class="btn-sm add-metadata-btn" data-type="series">Add</button>
+  </div>
+</div>
+        <div class="settings-card">
+          <h3>Cartoon Names</h3>
+          <div class="metadata-list" data-type="cartoon"></div>
+          <div class="add-metadata">
+            <input type="text" placeholder="New cartoon" data-type="cartoon">
+            <button class="btn-sm add-metadata-btn">Add</button>
+          </div>
+        </div>
+        <div class="settings-card">
+          <h3>Tags</h3>
+          <div class="metadata-list" data-type="tag"></div>
+          <div class="add-metadata">
+            <input type="text" placeholder="New tag" data-type="tag">
+            <button class="btn-sm add-metadata-btn">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <h2>Edit File</h2>
+      <form id="editForm">
+        <input type="hidden" id="editFileId" name="file_id">
+        <div class="form-grid">
+          <div class="form-group full-width">
+            <label>Title (Display Name)</label>
+            <input type="text" id="editTitle" name="title" placeholder="e.g., The Girlfriend">
+          </div>
+          <div class="form-group full-width">
+            <label>Caption</label>
+            <textarea id="editCaption" name="caption" rows="2"></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label>Poster Image URL</label>
+            <input type="text" id="editImage" name="image" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="editCategory" name="category"><option value="">None</option></select>
+          </div>
+          <div class="form-group">
+            <label>Language</label>
+            <select id="editLang" name="lang"><option value="">None</option></select>
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select id="editType" name="type">
+              <option value="">None</option>
+              <option value="movie">Movie</option>
+              <option value="series">Series</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Quality</label>
+            <input type="text" id="editQuality" name="quality" placeholder="1080p">
+          </div>
+          <div class="form-group">
+            <label>Season</label>
+            <input type="number" id="editSeason" name="season" placeholder="1">
+          </div>
+          <div class="form-group">
+            <label>Episode</label>
+            <input type="number" id="editEpisode" name="episode" placeholder="1">
+          </div>
+          <div class="form-group full-width">
+            <label>Tags (comma separated)</label>
+            <input type="text" id="editTags" name="tags" placeholder="action, thriller">
+          </div>
+          <div class="form-group full-width">
+            <label>Series Name (for grouping)</label>
+            <input type="text" id="editSeriesName" name="series_name" placeholder="e.g., Chhota Bheem">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Metadata Modal -->
+<div id="editMetadataModal" class="modal">
+  <div class="modal-content">
+    <h3>Edit Series</h3>
+    <form id="editMetadataForm">
+      <input type="hidden" id="editMetadataId">
+      <div class="form-group">
+        <label>Series Name</label>
+        <input type="text" id="editMetadataValue" required>
+      </div>
+      <div class="form-group">
+        <label>Poster URL</label>
+        <input type="text" id="editMetadataImage" placeholder="https://...">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn" onclick="closeMetadataModal()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+  <script>
+    const secret = new URLSearchParams(window.location.search).get('secret');
+
+
+
+    // ----- Refresh Dropdowns -----
+    async function refreshEditFormDropdowns() {
+      // Categories
+      const catRes = await fetch(`/api/admin/metadata/category?secret=${secret}`);
+      const cats = await catRes.json();
+      const catSelect = document.getElementById('editCategory');
+      catSelect.innerHTML = '<option value="">None</option>';
+      cats.forEach(c => catSelect.add(new Option(c.value, c.value)));
+
+      // Languages
+      const langRes = await fetch(`/api/admin/metadata/language?secret=${secret}`);
+      const langs = await langRes.json();
+      const langSelect = document.getElementById('editLang');
+      langSelect.innerHTML = '<option value="">None</option>';
+      langs.forEach(l => langSelect.add(new Option(l.value, l.value)));
+    }
+
+    // ----- Open Edit Modal -----
+    async function openEditModal(fileData) {
+      document.getElementById('editFileId').value = fileData.file_id;
+      document.getElementById('editTitle').value = fileData.title || '';
+      document.getElementById('editCaption').value = fileData.caption || '';
+      document.getElementById('editImage').value = fileData.image || '';
+      document.getElementById('editType').value = fileData.type || '';
+      document.getElementById('editSeason').value = fileData.season || '';
+      document.getElementById('editEpisode').value = fileData.episode || '';
+      document.getElementById('editQuality').value = fileData.quality || '';
+      document.getElementById('editTags').value = Array.isArray(fileData.tags) ? fileData.tags.join(', ') : (fileData.tags || '');
+
+      await refreshEditFormDropdowns();
+      // Set selected values after dropdowns populated
+      document.getElementById('editCategory').value = fileData.category || '';
+      document.getElementById('editLang').value = fileData.lang || '';
+
+      document.getElementById('editModal').style.display = 'block';
+    }
+
+    // ----- Event Delegation for Files Table -----
+    document.getElementById('fileTableBody').addEventListener('click', async (e) => {
+      const target = e.target;
+      if (target.classList.contains('edit-btn')) {
+        const fileId = target.dataset.fileId;
+        try {
+          const res = await fetch(`/api/admin/files/${fileId}?secret=${secret}`);
+          if (!res.ok) throw new Error('File not found');
+          const fileData = await res.json();
+          openEditModal(fileData);
+        } catch (err) {
+          alert('Failed to load file: ' + err.message);
+        }
+      }
+      if (target.classList.contains('delete-btn')) {
+        if (!confirm('Are you sure?')) return;
+        const fileId = target.dataset.fileId;
+        try {
+          const res = await fetch(`/api/admin/files/${fileId}?secret=${secret}`, { method: 'DELETE' });
+          if (res.ok) {
+            target.closest('tr').remove();
+          } else {
+            alert('Delete failed');
+          }
+        } catch (err) {
+          alert('Error: ' + err.message);
+        }
+      }
+    });
+
+    // ----- Edit Form Submission -----
+    document.getElementById('editForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fileId = document.getElementById('editFileId').value;
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      data.tags = data.tags.split(',').map(t => t.trim()).filter(Boolean);
+      try {
+        const res = await fetch(`/api/admin/files/${fileId}?secret=${secret}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (res.ok) {
+          alert('Updated successfully');
+          closeModal();
+          location.reload();
+        } else {
+          const err = await res.json();
+          alert('Update failed: ' + (err.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    });
+
+    // ----- Search with Debounce -----
+    let searchTimeout;
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(async () => {
+        const query = e.target.value;
+        const res = await fetch(`/api/admin/files?secret=${secret}&search=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        const tbody = document.getElementById('fileTableBody');
+        tbody.innerHTML = '';
+        data.files.forEach(file => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><img src="${file.image || '/placeholder.jpg'}" class="poster-thumb"></td>
+            <td>${file.title || file.caption || file.file_name}</td>
+            <td>${file.category || ''}</td>
+            <td>${file.lang || ''}</td>
+            <td>${(file.file_size / (1024*1024)).toFixed(0)} MB</td>
+            <td>
+              <button class="btn btn-sm edit-btn" data-file-id="${file.file_id}">Edit</button>
+              <button class="btn btn-sm delete-btn" data-file-id="${file.file_id}">Delete</button>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      }, 300);
+    });
+
+    // ----- Tab Switching -----
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab + 'Tab').classList.add('active');
+        if (btn.dataset.tab === 'settings') {
+          loadAllMetadata();
+        }
+      });
+    });
+
+    // ----- Load Metadata for Display -----
+async function loadAllMetadata() {
+  const types = ['category', 'language', 'series', 'cartoon', 'tag'];
+  for (const type of types) {
+    const container = document.querySelector(`.metadata-list[data-type="${type}"]`);
+    if (!container) continue;
+    try {
+      const res = await fetch(`/api/admin/metadata/${type}?secret=${secret}`);
+      const items = await res.json();
+      container.innerHTML = items.map(item => `
+        <div class="metadata-item" data-id="${item._id}" data-value="${item.value}" data-image="${item.image || ''}">
+          <span class="metadata-name">${item.value}</span>
+          <div style="display:flex; gap:0.5rem;">
+            <button class="edit-metadata-btn" style="background:none;border:none;color:var(--color-accent);cursor:pointer;">✏️</button>
+            <button class="delete-metadata" data-id="${item._id}">×</button>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      console.error(`Failed to load ${type}`, err);
+    }
+  }
+}
+
+// Metadata modal functions
+window.closeMetadataModal = function() {
+  document.getElementById('editMetadataModal').style.display = 'none';
+};
+
+function openMetadataModal(item) {
+  document.getElementById('editMetadataId').value = item._id;
+  document.getElementById('editMetadataValue').value = item.value;
+  document.getElementById('editMetadataImage').value = item.image || '';
+  document.getElementById('editMetadataModal').style.display = 'block';
+}
+
+// Edit form submission
+document.getElementById('editMetadataForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('editMetadataId').value;
+  const value = document.getElementById('editMetadataValue').value.trim();
+  const image = document.getElementById('editMetadataImage').value.trim();
+  if (!value) return alert('Series name required');
+  
+  try {
+    const res = await fetch(`/api/admin/metadata/${id}?secret=${secret}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value, image })
+    });
+    if (res.ok) {
+      closeMetadataModal();
+      loadAllMetadata();
+      refreshEditFormDropdowns();
+    } else {
+      alert('Update failed');
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+});
+
+// Search filter for series
+let seriesSearchTimeout;
+document.getElementById('seriesSearchInput').addEventListener('input', (e) => {
+  clearTimeout(seriesSearchTimeout);
+  seriesSearchTimeout = setTimeout(() => {
+    const query = e.target.value.toLowerCase();
+    const container = document.querySelector('.metadata-list[data-type="series"]');
+    const items = container.querySelectorAll('.metadata-item');
+    items.forEach(item => {
+      const name = item.querySelector('.metadata-name')?.textContent.toLowerCase() || '';
+      item.style.display = name.includes(query) ? 'flex' : 'none';
+    });
+  }, 200);
+});
+
+// ----- Event Delegation for Settings Tab (Add & Delete) -----
+document.getElementById('settingsTab').addEventListener('click', async (e) => {
+  // ADD metadata
+  if (e.target.classList.contains('add-metadata-btn')) {
+    const container = e.target.closest('.add-metadata');
+    const type = e.target.dataset.type; // assumes button has data-type
+    const nameInput = container.querySelector('.series-name-input') || container.querySelector('input[placeholder*="name"]') || container.querySelector('input');
+    const imageInput = container.querySelector('.series-image-input');
+    
+    const value = nameInput.value.trim();
+    const image = imageInput ? imageInput.value.trim() : '';
+    
+    if (!value) return;
+    
+    try {
+      const res = await fetch(`/api/admin/metadata?secret=${secret}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, value, image })
+      });
+      if (res.ok) {
+        nameInput.value = '';
+        if (imageInput) imageInput.value = '';
+        loadAllMetadata();
+        refreshEditFormDropdowns(); // if needed
+      } else {
+        alert('Failed to add');
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+
+   if (e.target.classList.contains('edit-metadata-btn')) {
+    const itemDiv = e.target.closest('.metadata-item');
+    const id = itemDiv.dataset.id;
+    const value = itemDiv.dataset.value;
+    const image = itemDiv.dataset.image;
+    openMetadataModal({ _id: id, value, image });
+  }
+  
+  // DELETE metadata
+  if (e.target.classList.contains('delete-metadata')) {
+    const id = e.target.dataset.id;
+    if (!confirm('Delete this item?')) return;
+    try {
+      await fetch(`/api/admin/metadata/${id}?secret=${secret}`, { method: 'DELETE' });
+      loadAllMetadata();
+      refreshEditFormDropdowns();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  }
+});
+
+        // ----- Global Functions -----
+    window.closeModal = function() {
+      document.getElementById('editModal').style.display = 'none';
+    };
+
+    // Initial load of metadata if settings tab is active (but it's not by default)
+  </script>
+</body>
+</html>
