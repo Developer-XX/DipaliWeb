@@ -173,16 +173,18 @@ async function searchAllDatabases(query, options = {}) {
   const skip = (page - 1) * PAGE_SIZE;
   const metadataFilter = buildMetadataFilter({ category, language, type, quality, season, episode });
   
-  // Determine if this is a series search (only if findSeriesMatch returns a value)
+  // Determine if this is a series search
   let targetSeries = null;
   if (query && query.trim()) {
     targetSeries = await findSeriesMatch(query);
   }
   
-  const fetchLimit = PAGE_SIZE * 3;
+  // Fetch all matching files (limit high enough to cover total collection)
+  const FETCH_ALL_LIMIT = 1000;
+  
   const promises = connections.map(conn => {
     return Promise.race([
-      queryDatabase(conn, query, metadataFilter, skip, fetchLimit),
+      queryDatabase(conn, query, metadataFilter, 0, FETCH_ALL_LIMIT),
       new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), SEARCH_TIMEOUT))
     ]).catch(err => {
       logger.warn(`DB query failed: ${err.message}`);
@@ -191,34 +193,38 @@ async function searchAllDatabases(query, options = {}) {
   });
   
   const dbResults = await Promise.all(promises);
-  let mergedResults = [];
-  let totalCount = 0;
+  let allResults = [];
   
-  dbResults.forEach(({ results, total }) => {
-    mergedResults.push(...results);
-    totalCount += total;
+  dbResults.forEach(({ results }) => {
+    allResults.push(...results);
   });
   
   // Deduplicate by file_id
   const seenFileIds = new Set();
-  mergedResults = mergedResults.filter(file => {
+  allResults = allResults.filter(file => {
     const key = file.file_id || (file._id && file._id.toString());
     if (!key || seenFileIds.has(key)) return false;
     seenFileIds.add(key);
     return true;
   });
-  totalCount = mergedResults.length;
-  mergedResults.sort((a, b) => b.created_at - a.created_at);
   
-  // Post-filter: remove files that belong to the matched series (if any)
+  // Filter out all series episodes
+  allResults = allResults.filter(file => {
+    const text = `${file.title || ''} ${file.caption || ''} ${file.file_name || ''}`;
+    return !hasSeasonEpisodePattern(text) && file.type !== 'series';
+  });
+  
+  // If a specific series was matched, also remove any remaining files that belong to it
   if (targetSeries) {
-    const before = mergedResults.length;
-    mergedResults = mergedResults.filter(file => !fileMatchesSeries(file, targetSeries));
-    const removed = before - mergedResults.length;
-    totalCount = Math.max(0, totalCount - removed);
+    allResults = allResults.filter(file => !fileMatchesSeries(file, targetSeries));
   }
   
-  const paginatedResults = mergedResults.slice(0, PAGE_SIZE);
+  // Sort by date descending
+  allResults.sort((a, b) => b.created_at - a.created_at);
+  
+  // Now paginate in memory
+  const totalCount = allResults.length;
+  const paginatedResults = allResults.slice(skip, skip + PAGE_SIZE);
   
   return {
     results: paginatedResults,

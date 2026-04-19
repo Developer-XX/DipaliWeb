@@ -147,41 +147,154 @@
     </div>
 
   <% } else { %>
-    <!-- SEARCH RESULTS PAGE -->
-    <div class="container py-4">
-      <div class="results-header">
-        <h2 class="results-title">Results for <span class="query">"<%= query %>"</span></h2>
-      </div>
+<% if (locals.query) { %>
+  <!-- SEARCH RESULTS PAGE -->
+  <div class="container py-4">
+    <div class="results-header">
+      <h2 class="results-title">Results for <span class="query">"<%= query %>"</span></h2>
+    </div>
 
-      <div class="row g-2" id="resultsGrid">
-        <% if (locals.results && results.length) { %>
-          <% results.forEach(file => { %>
-            <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
-              <%- include('partials/movie-card', { file, botUsername }) %>
-            </div>
-          <% }) %>
-        <% } else { %>
-          <div class="col-12">
-            <div class="no-results text-center py-5">
-              <p class="text-muted">No results found.</p>
-            </div>
+    <div class="row g-2" id="resultsGrid">
+      <% if (locals.results && results.length) { %>
+        <% results.forEach(file => { %>
+          <div class="col-6 col-sm-4 col-lg-3 col-xl-2">
+            <%- include('partials/movie-card', { file, botUsername }) %>
           </div>
-        <% } %>
-      </div>
-
-
-
-      <!-- LOAD MORE BUTTON -->
-      <% if (locals.pagination && pagination.page < pagination.totalPages) { %>
-        <div class="text-center py-4">
-          <button id="loadMoreBtn" data-page="<%= pagination.page %>" data-query="<%= query %>" class="btn btn-accent">
-            Load More
-          </button>
+        <% }) %>
+      <% } else { %>
+        <div class="col-12">
+          <div class="no-results text-center py-5">
+            <p class="text-muted">No results found.</p>
+          </div>
         </div>
       <% } %>
     </div>
-  <% } %>
-</div>
+
+    <!-- LOAD MORE BUTTON -->
+    <% if (locals.pagination && pagination.page < pagination.totalPages) { %>
+      <div class="text-center py-4">
+        <button id="loadMoreBtn" data-page="<%= pagination.page %>" data-query="<%= query %>" class="btn btn-accent">
+          Load More
+        </button>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Load More Script (only on search page) -->
+  <% if (locals.query) { %>
+  <script>
+  (function() {
+    const loadMoreBtn = document.getElementById('loadMoreBtn');
+    if (!loadMoreBtn) return;
+
+    const resultsGrid = document.getElementById('resultsGrid');
+    let isLoading = false;
+
+    loadMoreBtn.addEventListener('click', async function() {
+      if (isLoading) return;
+      const btn = this;
+      const currentPage = parseInt(btn.dataset.page);
+      const nextPage = currentPage + 1;
+      const query = btn.dataset.query;
+
+      isLoading = true;
+      btn.textContent = 'Loading...';
+      btn.disabled = true;
+
+      try {
+        const url = `/api/search?q=${encodeURIComponent(query)}&page=${nextPage}`;
+        const res = await fetch(url, {
+          headers: { 'Accept': 'application/json' }
+        });
+        
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        
+        if (!data.results || !Array.isArray(data.results) || data.results.length === 0) {
+          btn.remove();
+          return;
+        }
+
+        data.results.forEach(file => {
+          const col = document.createElement('div');
+          col.className = 'col-6 col-sm-4 col-lg-3 col-xl-2';
+          col.innerHTML = generateCardHTML(file);
+          resultsGrid.appendChild(col);
+        });
+
+        if (nextPage >= data.totalPages) {
+          btn.remove();
+        } else {
+          btn.dataset.page = nextPage;
+          btn.textContent = 'Load More';
+          btn.disabled = false;
+        }
+      } catch (error) {
+        console.error('Load more failed:', error);
+        btn.textContent = 'Error - Try Again';
+        btn.disabled = false;
+      } finally {
+        isLoading = false;
+      }
+    });
+
+    function generateCardHTML(file) {
+      if (file.isSeries) {
+        return `
+          <a href="/series/${encodeURIComponent(file.name)}" style="text-decoration: none;">
+            <div class="movie-card">
+              <div class="poster">
+                <img src="/img?url=${encodeURIComponent(file.poster || '')}" alt="${escapeHtml(file.name)}" onerror="this.src='/placeholder.jpg'">
+              </div>
+              <div class="card-body">
+                <h6 class="card-title">${escapeHtml(file.name)}</h6>
+                <p class="card-episodes">${file.totalSeasons} seasons · ${file.totalEpisodes} episodes</p>
+              </div>
+            </div>
+          </a>
+        `;
+      }
+
+      const imageUrl = file.image ? `/img?url=${encodeURIComponent(file.image)}` : '/placeholder.jpg';
+      const title = (file.title || file.caption || file.file_name || 'Untitled');
+      const safeTitle = escapeHtml(title);
+      const sizeMB = (file.file_size / (1024 * 1024)).toFixed(0);
+      
+      const badges = [];
+      if (file.lang) badges.push(`<span class="badge-custom">${escapeHtml(file.lang)}</span>`);
+      if (file.quality) badges.push(`<span class="badge-custom">${escapeHtml(file.quality)}</span>`);
+
+      return `
+        <div class="movie-card">
+          <div class="poster">
+            <img src="${imageUrl}" alt="${safeTitle}" loading="lazy" onerror="this.src='/placeholder.jpg'">
+          </div>
+          <div class="card-body">
+            <h6 class="card-title" title="${safeTitle}">${safeTitle}</h6>
+            <div class="badges">${badges.join('')}</div>
+            <div class="footer">
+              <small class="size">${sizeMB} MB</small>
+              <a href="/get/${file.file_id}" class="get-btn" target="_blank">Get</a>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  })();
+</script>
+<% } %>
+<% } %>
+<% } %>
 
 <!-- SCRIPTS -->
 <% if (!locals.query) { %>
@@ -237,44 +350,3 @@
 </script>
 <% } %>
 
-<% if (locals.query) { %>
-<script>
-  document.getElementById('loadMoreBtn')?.addEventListener('click', async function() {
-    const btn = this;
-    const page = parseInt(btn.dataset.page) + 1;
-    const query = btn.dataset.query;
-    try {
-      const res = await fetch(`/api/search?q=${encodeURIComponent(query)}&page=${page}`);
-      const data = await res.json();
-      const grid = document.getElementById('resultsGrid');
-      data.results.forEach(file => {
-        const col = document.createElement('div');
-        col.className = 'col-6 col-sm-4 col-lg-3 col-xl-2';
-        col.innerHTML = `
-          <div class="movie-card">
-            <div class="poster">
-              <img src="/img?url=${encodeURIComponent(file.image || '')}" alt="${file.file_name}" onerror="this.src='/placeholder.jpg'">
-            </div>
-            <div class="card-body">
-              <h6 class="card-title">${file.file_name}</h6>
-              <div class="badges">
-                ${file.lang ? `<span class="badge-custom">${file.lang}</span>` : ''}
-                ${file.quality ? `<span class="badge-custom">${file.quality}</span>` : ''}
-              </div>
-              <div class="footer">
-                <small class="size">${(file.file_size / (1024*1024)).toFixed(0)} MB</small>
-                <a href="/get/${file.file_id}" class="get-btn">Get</a>
-              </div>
-            </div>
-          </div>
-        `;
-        grid.appendChild(col);
-      });
-      if (page >= data.totalPages) btn.remove();
-      else btn.dataset.page = page;
-    } catch (err) {
-      console.error('Failed to load more', err);
-    }
-  });
-</script>
-<% } %>

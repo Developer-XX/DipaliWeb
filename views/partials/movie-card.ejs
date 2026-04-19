@@ -2,7 +2,7 @@
   <a href="/series/<%= encodeURIComponent(file.name) %>" style="text-decoration: none;">
     <div class="movie-card">
       <div class="poster">
-        <img src="/img?url=<%= encodeURIComponent(file.seriesPoster || '') %>" alt="<%= file.name %>" onerror="this.src='/placeholder.jpg'">
+        <img src="/img?url=<%= encodeURIComponent(file.poster || '') %>" alt="<%= file.name %>" onerror="this.src='/placeholder.jpg'">
       </div>
       <div class="card-body">
         <h6 class="card-title"><%= file.name %></h6>
