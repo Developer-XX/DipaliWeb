@@ -14,6 +14,12 @@ const app = express();
 
 app.set('trust proxy', 1);
 
+// Utility to strip HTML tags
+app.locals.stripHtml = (text) => {
+  if (!text) return '';
+  return String(text).replace(/<\/?[^>]+(>|$)/g, '');
+};
+
 // Middleware
 app.use(helmet({
   contentSecurityPolicy: {

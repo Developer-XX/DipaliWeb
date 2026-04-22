@@ -1,11 +1,11 @@
 <% if (file.isSeries) { %>
-  <a href="/series/<%= encodeURIComponent(file.name) %>" style="text-decoration: none;">
+  <a href="/series/<%= encodeURIComponent(String(file.name || file.seriesName || '')) %>" style="text-decoration: none;">
     <div class="movie-card">
       <div class="poster">
-        <img src="/img?url=<%= encodeURIComponent(file.poster || '') %>" alt="<%= file.name %>" onerror="this.src='/placeholder.jpg'">
+        <img src="/img?url=<%= encodeURIComponent(file.poster || '') %>" alt="<%= String(file.name || file.seriesName || '') %>" onerror="this.src='/placeholder.jpg'">
       </div>
       <div class="card-body">
-        <h6 class="card-title"><%= file.name %></h6>
+        <h6 class="card-title"><%= String(file.name || file.seriesName || 'Series') %></h6>
         <p class="card-episodes"><%= file.totalSeasons %> seasons · <%= file.totalEpisodes %> episodes</p>
       </div>
     </div>
@@ -20,8 +20,8 @@
            onerror="this.src='/placeholder.jpg'">
     </div>
     <div class="card-body">
-      <h6 class="card-title" title="<%= file.title || file.caption || file.file_name %>">
-        <%= file.title || file.caption || file.file_name %>
+      <h6 class="card-title" title="<%= stripHtml(file.title || file.caption || file.file_name) %>">
+        <%= stripHtml(file.title || file.caption || file.file_name) %>
       </h6>
       <div class="badges">
         <% if (file.lang) { %><span class="badge-custom"><%= file.lang %></span><% } %>

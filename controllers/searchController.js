@@ -1,49 +1,54 @@
 const searchService = require('../services/searchService');
 const cacheService = require('../services/cacheService');
 const asyncWrapper = require('../utils/asyncWrapper');
-const { getConnections } = require('../config/db');
 
 const search = asyncWrapper(async (req, res) => {
   const { q = '', page = 1, category, language, type, quality } = req.query;
   const pageNum = parseInt(page, 10) || 1;
   
-  let matchedSeries = null;
-  let seriesData = null;
-  if (q) {
-    matchedSeries = await searchService.findSeriesMatch(q);
-    if (matchedSeries) {
-      seriesData = await searchService.getSeriesEpisodes(matchedSeries);
-    }
-  }
+  // 1. Find all matching series (array of metadata documents)
+  const matchedSeriesList = await searchService.findSeriesMatches(q) || [];
+  // console.log('matchedSeriesList:', matchedSeriesList.map(s => s.value));
 
+  // 2. Build cache key and try to get cached search results
   const cacheKey = `search:${q}:${pageNum}:${category}:${language}:${type}:${quality}`;
   let results = await cacheService.getCachedResults(cacheKey);
+  
   if (!results) {
+    // 3. Perform actual search (episodes are already filtered out)
     results = await searchService.searchAllDatabases(q, {
       page: pageNum,
       category,
       language,
       type,
-      quality,
-      seriesName: matchedSeries
+      quality
     });
     await cacheService.setCachedResults(cacheKey, results);
   }
 
-  if (matchedSeries && seriesData && pageNum === 1) {
-    const seriesCard = {
-      _id: `series-${matchedSeries.value}`,
-      isSeries: true,
-      name: matchedSeries.value,
-      poster: matchedSeries.image || seriesData.seriesPoster || null,
-      totalSeasons: seriesData.seasons.length,
-      totalEpisodes: seriesData.totalEpisodes,
-      seriesName: matchedSeries.value
-    };
-    results.results = [seriesCard, ...results.results];
-    results.total += 1;
+  // 4. Inject series cards only on page 1
+  if (matchedSeriesList.length > 0 && pageNum === 1) {
+    const seriesCards = [];
+    for (const seriesMeta of matchedSeriesList) {
+      const seriesName = seriesMeta.value;
+      const seriesData = await searchService.getSeriesEpisodes(seriesName);
+      seriesCards.push({
+        _id: `series-${seriesName}`,
+        isSeries: true,
+        name: seriesName,
+        poster: seriesMeta.image || seriesData.seriesPoster || null,
+        totalSeasons: seriesData.seasons.length,
+        totalEpisodes: seriesData.totalEpisodes,
+        seriesName: seriesName
+      });
+    }
+    // Prepend series cards to the file results
+    results.results = [...seriesCards, ...results.results];
+    results.total += seriesCards.length;
+    results.totalPages = Math.ceil(results.total / 20);
   }
 
+  // 5. Render or send JSON
   if (req.accepts('html')) {
     return res.render('index', {
       query: q,
@@ -57,7 +62,8 @@ const search = asyncWrapper(async (req, res) => {
   res.json(results);
 });
 
-// ... rest of controller unchanged
+// ... rest of controller unchanged (trending, recent, etc.)
+
 
 const trending = asyncWrapper(async (req, res) => {
   const cacheKey = 'trending';
@@ -79,7 +85,6 @@ const recent = asyncWrapper(async (req, res) => {
   res.json(cached);
 });
 
-// Get filter options
 const filterOptions = asyncWrapper(async (req, res) => {
   const cacheKey = 'filterOptions';
   let cached = await cacheService.getCachedResults(cacheKey);

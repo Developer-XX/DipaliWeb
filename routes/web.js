@@ -69,9 +69,9 @@ router.get('/series', async (req, res) => {
 
 // Series detail page (must come after /series to avoid conflict)
 router.get('/series/:name', async (req, res) => {
-  const { name } = req.params;
+  const seriesName = decodeURIComponent(req.params.name);
   const season = req.query.season ? parseInt(req.query.season) : null;
-  const data = await searchService.getSeriesEpisodes(name, season);
+  const data = await searchService.getSeriesEpisodes(seriesName, season);
   res.render('series-detail', { 
     series: data,
     botUsername: process.env.TELEGRAM_BOT_USERNAME,
@@ -84,32 +84,30 @@ router.get('/search', async (req, res) => {
   const { q = '', page = 1 } = req.query;
   const pageNum = parseInt(page, 10) || 1;
 
-  let matchedSeries = null;
-  let seriesData = null;
-  if (q) {
-    matchedSeries = await searchService.findSeriesMatch(q);
-    if (matchedSeries) {
-      seriesData = await searchService.getSeriesEpisodes(matchedSeries);
+  // Find all matching series (array of metadata documents)
+  const matchedSeriesList = await searchService.findSeriesMatches(q) || [];
+  
+  // Get file results (already filtered to exclude episodes)
+  const results = await searchService.searchAllDatabases(q, { page: pageNum });
+
+  // Inject series cards on page 1
+  if (matchedSeriesList.length > 0 && pageNum === 1) {
+    const seriesCards = [];
+    for (const seriesMeta of matchedSeriesList) {
+      const seriesName = seriesMeta.value;
+      const seriesData = await searchService.getSeriesEpisodes(seriesName);
+      seriesCards.push({
+        _id: `series-${seriesName}`,
+        isSeries: true,
+        name: seriesName,
+        poster: seriesMeta.image || seriesData.seriesPoster || null,
+        totalSeasons: seriesData.seasons.length,
+        totalEpisodes: seriesData.totalEpisodes,
+        seriesName: seriesName
+      });
     }
-  }
-
-  let results = { results: [], total: 0, page: pageNum, totalPages: 0 };
-  if (q) {
-    results = await searchService.searchAllDatabases(q, { page: pageNum, seriesName: matchedSeries });
-  }
-
-  if (matchedSeries && seriesData && pageNum === 1) {
-    const seriesCard = {
-      _id: `series-${matchedSeries}`,
-      isSeries: true,
-      name: matchedSeries,
-      poster: seriesData.seriesPoster,
-      totalSeasons: seriesData.seasons.length,
-      totalEpisodes: seriesData.totalEpisodes,
-      seriesName: matchedSeries
-    };
-    results.results = [seriesCard, ...results.results];
-    results.total = Math.max(1, results.total + 1);
+    results.results = [...seriesCards, ...results.results];
+    results.total += seriesCards.length;
     results.totalPages = Math.ceil(results.total / 20);
   }
 

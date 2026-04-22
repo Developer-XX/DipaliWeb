@@ -256,7 +256,7 @@
       }
 
       const imageUrl = file.image ? `/img?url=${encodeURIComponent(file.image)}` : '/placeholder.jpg';
-      const title = (file.title || file.caption || file.file_name || 'Untitled');
+      const title = stripHtml(file.title || file.caption || file.file_name || 'Untitled');
       const safeTitle = escapeHtml(title);
       const sizeMB = (file.file_size / (1024 * 1024)).toFixed(0);
       

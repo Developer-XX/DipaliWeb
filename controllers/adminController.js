@@ -269,12 +269,37 @@ const addMetadata = asyncWrapper(async (req, res) => {
 
 const updateMetadata = asyncWrapper(async (req, res) => {
   const { id } = req.params;
-  const { image, label } = req.body;
+  const { value, image, label } = req.body;
+  
+  if (!value) {
+    return res.status(400).json({ error: 'Value is required' });
+  }
+  
   const connections = getConnections();
   const conn = connections[0];
   const model = conn.model('Metadata');
-  const item = await model.findByIdAndUpdate(id, { $set: { image, label } }, { new: true });
-  res.json(item);
+  
+  const updated = await model.findByIdAndUpdate(
+    id,
+    { 
+      value, 
+      image: image || null, 
+      label: label || value, 
+      updated_at: new Date() 
+    },
+    { new: true, runValidators: true }
+  );
+  
+  if (!updated) {
+    return res.status(404).json({ error: 'Metadata not found' });
+  }
+  
+  // Clear caches that might contain old series data
+  await cacheService.invalidateCache('series:*');
+  await cacheService.invalidateCache('frontend:filters');
+  await cacheService.invalidateCache('search:*');
+  
+  res.json({ success: true, data: updated });
 });
 
 const deleteMetadata = asyncWrapper(async (req, res) => {

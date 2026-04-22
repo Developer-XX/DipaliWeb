@@ -35,7 +35,7 @@
             </div>
           </div>
           <div class="card-body">
-            <h5 class="card-title"><%= ep.title || ep.caption %></h5>
+            <h5 class="card-title"><%= stripHtml(ep.title || ep.caption) %></h5>
             <div class="footer">
               <span class="size"><%= (ep.file_size / (1024*1024)).toFixed(0) %> MB</span>
               <a href="/get/<%= ep.file_id %>" class="get-btn" target="_blank">Download</a>
