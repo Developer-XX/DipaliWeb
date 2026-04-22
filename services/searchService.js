@@ -313,32 +313,55 @@ async function searchAllDatabases(query, options = {}) {
 // ... (getTrending, getRecent, incrementClicks unchanged) ...
 
 
-// Trending files
-async function getTrending(limit = 20) {
-  const connections = getConnections();
-  const promises = connections.map(conn => 
-    conn.model('VJFile').find().sort({ clicks: -1 }).limit(limit).lean().exec()
-      .catch(() => [])
-  );
-  const results = await Promise.all(promises);
-  const merged = results.flat();
-  merged.sort((a, b) => b.clicks - a.clicks);
-  merged.forEach(normalizeFileSize);
-  return merged.slice(0, limit);
+// Helper: check if a file is a series episode (should be hidden from general listings)
+function isEpisodeFile(file) {
+  // Check explicit type
+  if (file.type === 'series') return true;
+  // Check for season/episode patterns in text
+  const text = `${file.title || ''} ${file.caption || ''} ${file.file_name || ''}`;
+  return hasSeasonEpisodePattern(text);
 }
 
-// Recent files
-async function getRecent(limit = 20) {
+// Trending files – now with episode filtering
+async function getTrending(limit = 20) {
   const connections = getConnections();
+  // Fetch more than needed to account for filtering
+  const fetchLimit = limit * 3;
   const promises = connections.map(conn => 
-    conn.model('VJFile').find().sort({ created_at: -1 }).limit(limit).lean().exec()
+    conn.model('VJFile').find().sort({ clicks: -1 }).limit(fetchLimit).lean().exec()
       .catch(() => [])
   );
   const results = await Promise.all(promises);
   const merged = results.flat();
-  merged.sort((a, b) => b.created_at - a.created_at);
+  
+  // Normalize and filter out episodes
   merged.forEach(normalizeFileSize);
-  return merged.slice(0, limit);
+  const filtered = merged.filter(file => !isEpisodeFile(file));
+  
+  // Sort by clicks again (since we merged multiple arrays)
+  filtered.sort((a, b) => (b.clicks || 0) - (a.clicks || 0));
+  
+  return filtered.slice(0, limit);
+}
+
+// Recent files – with episode filtering
+async function getRecent(limit = 20) {
+  const connections = getConnections();
+  const fetchLimit = limit * 3;
+  const promises = connections.map(conn => 
+    conn.model('VJFile').find().sort({ created_at: -1 }).limit(fetchLimit).lean().exec()
+      .catch(() => [])
+  );
+  const results = await Promise.all(promises);
+  const merged = results.flat();
+  
+  merged.forEach(normalizeFileSize);
+  const filtered = merged.filter(file => !isEpisodeFile(file));
+  
+  // Sort by date descending
+  filtered.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  
+  return filtered.slice(0, limit);
 }
 
 // Increment click count
