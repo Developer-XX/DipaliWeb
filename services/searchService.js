@@ -19,11 +19,11 @@ function escapeRegex(string) {
 function hasSeasonEpisodePattern(text) {
   if (!text) return false;
   const patterns = [
-    /\bS(?:eason)?\s*\d{1,3}\b/i,
-    /\bE(?:pisode)?\s*\d{1,3}\b/i,
-    /\bS\d{1,3}[._-]?E\d{1,3}\b/i,
-    /[._-]S\d{1,3}[._-]?E?\d{0,3}\b/i
-  ];
+  /\bS(?:eason)?\s*\d{1,3}\b/i,
+  /\bE(?:pisode)?\s*\d{1,3}(?:[-–]?\s*E?\d{1,3})?\b/i,  // handles E05, E05-E08, E05E06, etc.
+  /\bS\d{1,3}[._-]?E\d{1,3}\b/i,
+  /[._-]S\d{1,3}[._-]?E?\d{0,3}\b/i
+];
   return patterns.some(pattern => pattern.test(text));
 }
 
@@ -281,16 +281,37 @@ async function getSeriesEpisodes(seriesName, season = null) {
     if (matchingSeries.length === 0) continue;
     const bestMatch = matchingSeries[0];
     if (bestMatch.toLowerCase() !== seriesName.toLowerCase()) continue;
-    let seasonFromText = null, episodeFromText = null;
+
+    let seasonFromText = null;
+    let episodeFromText = null;
+    let displayEpisode = null;
+
+    // Season
     const seasonMatch = (ep.caption || '').match(/S(\d{1,2})/i) || (ep.file_name || '').match(/S(\d{1,2})/i);
     if (seasonMatch) seasonFromText = parseInt(seasonMatch[1], 10);
-    const episodeMatch = (ep.caption || '').match(/E(\d{1,3})/i) || (ep.file_name || '').match(/E(\d{1,3})/i);
-    if (episodeMatch) episodeFromText = parseInt(episodeMatch[1], 10);
+
+    // Episode or episode range (E05, E05-E08, E05-08, E05E06)
+    const episodeRangePattern = /E(\d{1,3})(?:[-](?:E)?(\d{1,3}))?/i;
+    const episodeRangeMatch = (ep.caption || '').match(episodeRangePattern) ||
+                              (ep.file_name || '').match(episodeRangePattern);
+
+    if (episodeRangeMatch) {
+      episodeFromText = parseInt(episodeRangeMatch[1], 10);
+      if (episodeRangeMatch[2]) {
+        // Valid range: second number captured only when a dash is present
+        displayEpisode = `E${episodeRangeMatch[1]}-E${episodeRangeMatch[2]}`;
+      } else {
+        displayEpisode = `E${episodeRangeMatch[1]}`;
+      }
+    }
+
     const finalSeason = ep.season || seasonFromText;
     const finalEpisode = ep.episode || episodeFromText;
     if (!finalSeason) continue;
+
     ep.season = finalSeason;
     ep.episode = finalEpisode;
+    ep.displayEpisode = displayEpisode;
     parsedEpisodes.push(ep);
   }
   const grouped = {};
